@@ -1,0 +1,139 @@
+<style type="text/css">
+	.chart {
+	 width: 500px;
+	 height: 500px;
+	}
+</style>
+<section data-ng-controller="ArticlesController" data-ng-init="find()">
+	<div class="page-header">
+		<form class="form-inline pull-right">
+		  <div class="form-group">
+		    <input type="text" class="form-control" id="search" placeholder="search" ng-model='search'>
+		  </div>
+		  <div class="text-right"><small><a href="" ng-click="isCollapsed = !isCollapsed">advance search</a></small></div>
+		</form>
+		<h1>Articles </h1>
+	</div>
+	<div collapse="isCollapsed">
+		<div class="panel panel-default">
+		   <span class="btn glyphicon glyphicon-remove pull-right" ng-click="isCollapsed = true"></span>
+			<div class="panel-body">
+			  <label class="checkbox-inline">
+			    <input type="checkbox" ng-model="customUserCheck" ng-change="checkboxUser()" ng-true-value="t" ng-false-value="f">
+			    Show only my article
+			  </label>
+			  <br><br><span class='text-muted'>Filter by Market:</span>
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" ng-model="customCategory.health" ng-true-value="Health" ng-false-value="">
+				    Health
+				  </label>
+				</div>
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" ng-model="customCategory.technology" ng-true-value="Technology" ng-false-value="">
+				    Technolgy
+				  </label>
+				</div>
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" ng-model="customCategory.education" ng-true-value="Education" ng-false-value="">
+				    Education
+				  </label>
+				</div>
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" ng-model="customCategory.finance" ng-true-value="Finance" ng-false-value="">
+				    Finance
+				  </label>
+				</div>
+				<div class="checkbox">
+				  <label>
+				    <input type="checkbox" ng-model="customCategory.travel" ng-true-value="Travel" ng-false-value="">
+				    Travel
+				  </label>
+				</div>
+			  <br><span class='text-muted'>Filter by Tags:</span>
+			  <tags-input ng-model="tags"></tags-input>
+			  <!-- getTopK(56, '2015-03-28T00:00:00.045Z', '2015-03-29T00:00:00.045Z' ) -->
+			</div> 
+		</div>
+	</div>
+	<ul class="nav nav-tabs">
+	  <li role="presentation" ng-class="{active: sort.nameTab}" ng-click="sort.marketTab=false; sort('title')"><a href="">Name</a></li>
+	  <li role="presentation" ng-class="{active: sort.dateTab}" ng-click="sort.marketTab=false; sort('created')"><a href="">Date</a></li>
+  	  <li role="presentation" ng-class="{active: sort.topTab}" ng-click="sort.topTab=true; sort.dateTab=false; sort.nameTab=false; sort.marketTab=false"><a href="">Top</a></li>
+  	  <li role="presentation" ng-class="{active: sort.marketTab}" ng-click="sort.topTab=false; sort.dateTab=false; sort.nameTab=false; sort.marketTab=true; getMarketData()"><a href="">Market</a></li>  	  
+	</ul>
+	<br>
+	<div class="list-group" ng-show="sort.dateTab || sort.nameTab">
+		<a data-ng-repeat="article in articles | filter:search | filter:{user: {_id: customUser}} | filterByTags:tags:customCategory |orderBy: sort.order" data-ng-href="#!/articles/{{article._id}}" class="list-group-item">
+			<small class="list-group-item-text">
+				Posted on
+				<span data-ng-bind="article.created | date:'mediumDate'"></span>
+				by
+				<span data-ng-bind="article.user.displayName"></span>
+			</small>
+			<h4 class="list-group-item-heading" data-ng-bind="article.title"></h4>
+			<p class="list-group-item-text" data-ng-bind="article.category"></p>
+		</a>
+	</div>
+
+	<div ng-show="sort.topTab">
+	    <div class="row">
+	        <div class="col-sm-5">
+	              <label class="control-label" for="fromDateInput">From: </label>
+	            <p class="input-group">
+	              <input type="text" id="fromDate1Input" class="form-control" datepicker-popup="{{format}}" ng-model="getTopKFrom" is-open="opened" ng-required="true" close-text="Close" />
+	              <span class="input-group-btn">
+	                <button type="button" class="btn btn-default" ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
+	              </span>
+	            </p>
+	        </div>
+            <div class="col-sm-5">
+	              <label class="control-label" for="fromDate2Input">To: </label>
+	            <p class="input-group">
+	              <input type="text" class="form-control" id="fromDate2Input" datepicker-popup="{{format}}" ng-model="getTopKTo" is-open="opened" ng-required="true" close-text="Close" min-date="getTopKFrom"/>
+	              <span class="input-group-btn">
+	                <button type="button" class="btn btn-default" ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
+	              </span>
+	            </p>
+	        </div>
+            <div class="col-sm-2">
+                <label class="control-label" for="numInput">Num: </label>
+	            <p class="input-group">
+	               <input type="text" class="form-control" id="numInput" ng-model="getTopKNum" />
+	              <span class="input-group-btn">
+                    <button type="button" class="btn btn-default" ng-click="getTopK(getTopKNum, getTopKFrom, getTopKTo )"><i class="glyphicon glyphicon-search"></i></button>
+	              </span>
+	            </p>
+	        </div>
+	    </div>
+	</div>
+
+	<div class="list-group" ng-show="sort.topTab">
+		<a data-ng-repeat="article in getTopKArticles | filter:search | filter:{user: customUser} | filterByTags:tags:customCategory" data-ng-href="#!/articles/{{article._id}}" class="list-group-item">
+			<small class="list-group-item-text">
+				Posted on
+				<span data-ng-bind="article.created | date:'mediumDate'"></span>
+				by
+				<span data-ng-bind="article.user.displayName"></span>
+			</small>
+			<h4 class="list-group-item-heading" data-ng-bind="article.title"></h4>
+			<p class="list-group-item-text" data-ng-bind="article.category"></p>
+			<span class="glyphicon list-group-item-text glyphicon-thumbs-up text-muted"></span>
+			<span class="list-group-item-text text-muted" data-ng-bind="article.vote.like"></span>
+		</a>
+	</div>
+  <div
+    data-ac-chart="'pie'" 
+    data-ac-data="data" 
+    data-ac-config="config" 
+    ng-show="sort.marketTab"
+    class="chart">
+  </div>
+
+	<div class="alert alert-warning text-center" data-ng-if="articles.$resolved && !articles.length">
+		No articles yet, why don't you <a href="/#!/articles/create">create one</a>?
+	</div>
+</section>
